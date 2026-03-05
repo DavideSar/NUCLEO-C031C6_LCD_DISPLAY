@@ -9,6 +9,7 @@
 /* USER CODE END Header */
 
 #include "main.h"
+#include <stdio.h>
 
 /* USER CODE BEGIN PD */
 #define RESET(c)    LL_GPIO_ResetOutputPin(c##_GPIO_Port, c##_Pin)
@@ -208,24 +209,29 @@ void lcdInit(void)
 
 int main(void)
 {
-    /* USER CODE BEGIN 1 */
-    /* USER CODE END 1 */
+	uint8_t i = 0;
+	char buff[16];
 
     SystemClock_Config();
-    /* Configure SysTick for LL_mDelay (1 ms tick) */
     LL_Init1msTick(SystemCoreClock);
-    LL_SetSystemCoreClock(SystemCoreClock);
     MX_GPIO_Init();
 
-    /* USER CODE BEGIN 2 */
+    lcdInit();
 
-    lcdInit();                          /* Initialise LCD first          */
+    lcdPrint("Mostra Char");
+    LL_mDelay(20000);
 
-    lcdPrint("DAVIDE");
-
-    /* USER CODE END 2 */
-
-    while (1){}
+    while (1){
+    	sprintf(buff,"Char %4d -> ",i);
+    	lcdSetCursor(0, 0);
+    	lcdPrint(buff);
+    	lcdSendChar(i);
+    	sprintf(buff,"Char 0x%02X -> %c",i,i);
+    	lcdSetCursor(1, 0);
+    	lcdPrint(buff);
+    	i+=1;
+    	LL_mDelay(5000);
+    }
 }
 
 /* ── Clock & GPIO init (unchanged from CubeMX output) ────────────────────── */
