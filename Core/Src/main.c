@@ -12,6 +12,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
+#include <stdbool.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -36,7 +37,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
-
+bool pause = false;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -177,10 +178,6 @@ void lcdInit(void)
 int main(void)
 {
 	/* USER CODE BEGIN 1 */
-
-	uint8_t i = 0;
-	char buff[16];
-
 	/* USER CODE END 1 */
 
 	/* MCU Configuration--------------------------------------------------------*/
@@ -189,7 +186,6 @@ int main(void)
 	HAL_Init();
 
 	/* USER CODE BEGIN Init */
-	lcdInit();
 	/* USER CODE END Init */
 
 	/* Configure the system clock */
@@ -203,7 +199,7 @@ int main(void)
 
     /* USER CODE BEGIN 2 */
 
-    lcdSendCmd(0x01);
+    lcdInit();
     lcdPrint("Mostra Char");
     LL_mDelay(1000);
 
@@ -211,27 +207,34 @@ int main(void)
 
     /* Infinite loop */
     /* USER CODE BEGIN WHILE */
+	uint8_t i = 0;
+	char buff[16];
     while (1)
     {
     	/* USER CODE END WHILE */
         /* USER CODE BEGIN 3 */
+    	while(!pause){
+			lcdSendCmd(0x01);
+			sprintf(buff,"Char %4d -> ",i);
+			lcdSetCursor(0, 0);
+			lcdPrint(buff);
+			lcdSendChar(i);
+			sprintf(buff,"Char 0x%02X -> %c",i,i);
+			lcdSetCursor(1, 0);
+			lcdPrint(buff);
+			i+=1;
+			LL_mDelay(250);
+    	}
 
-    	sprintf(buff,"Char %4d -> ",i);
-    	lcdSetCursor(0, 0);
-    	lcdPrint(buff);
-    	lcdSendChar(i);
-    	sprintf(buff,"Char 0x%02X -> %c",i,i);
-    	lcdSetCursor(1, 0);
-    	lcdPrint(buff);
-    	i+=1;
-    	LL_mDelay(250);
+
     }
     /* USER CODE END 3 */
 }
 
 void UserButton_Callback(void)
 {
-  LL_GPIO_TogglePin(INTERNAL_LED_GPIO_Port, INTERNAL_LED_Pin);
+  TOGGLE(INTERNAL_LED);
+  pause = !pause;
 }
 
 /**
