@@ -2,8 +2,7 @@
 /**
   ******************************************************************************
   * @file           : main.c
-  * @brief          : HD44780 LCD driver (4-bit mode) for NUCLEO-C031C6
-  *                   LCD: LCD-016N002M-TTI-ET (16x2)
+  * @brief          : Main program body
   ******************************************************************************
   */
 /* USER CODE END Header */
@@ -12,9 +11,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
 #include <stdio.h>
-
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -38,7 +35,6 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -49,7 +45,6 @@ static void MX_GPIO_Init(void);
 /* USER CODE BEGIN PFP */
 void Delay_uS(int uSTim);
 void setLcdDataPort(uint8_t nibble);
-void lcdPulseEnable(void);
 void lcdSendNibble(uint8_t nibble);
 void lcdSendCmd(char cmd);
 void lcdSendChar(char data);
@@ -61,56 +56,29 @@ void lcdInit(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
-/**
- * @brief  Microsecond busy-wait delay.
- *         Calibrated for 8 MHz HSE (SYSCLK = 8 MHz, ~8 cycles/us).
- *         Adjust the multiplier if you change the clock source.
- */
 void Delay_uS(int uSTim)
 {
-    volatile int count = uSTim * 2;   /* ~4 cycles/iteration at 8 MHz */
+    volatile int count = uSTim * 12;
     while (count--);
 }
 
-/**
- * @brief  Write the lower 4 bits of 'nibble' to LCD data lines DB4–DB7.
- *         Bit0 → DB4, Bit1 → DB5, Bit2 → DB6, Bit3 → DB7
- */
 void setLcdDataPort(uint8_t nibble)
 {
     if (nibble & 0x01) SET(LCD_DB4); else RESET(LCD_DB4);
     if (nibble & 0x02) SET(LCD_DB5); else RESET(LCD_DB5);
-    if (nibble & 0x04) SET(LCD_DB6); else RESET(LCD_DB6);  /* BUG FIX: was 0x03 */
+    if (nibble & 0x04) SET(LCD_DB6); else RESET(LCD_DB6);
     if (nibble & 0x08) SET(LCD_DB7); else RESET(LCD_DB7);
 }
 
-/**
- * @brief  Generate one EN pulse (high → low).
- *         HD44780 requires EN high for ≥ 230 ns; at 8 MHz one Delay_uS(1) ≈ 1 µs.
- */
-void lcdPulseEnable(void)
-{
-    Delay_uS(1);
-    SET(LCD_EN);
-    Delay_uS(1);
-    RESET(LCD_EN);
-    Delay_uS(1);
-}
-
-/**
- * @brief  Put a nibble on the bus and clock it in.
- */
 void lcdSendNibble(uint8_t nibble)
 {
+	SET(LCD_EN);
+	Delay_uS(1);
     setLcdDataPort(nibble & 0x0F);
-    lcdPulseEnable();
+	Delay_uS(1);
+    RESET(LCD_EN);
 }
 
-/**
- * @brief  Poll the busy flag (DB7).
- *         Returns 0 when the LCD is ready, 1 on timeout.
- */
 int lcdCheckBusy(void)
 {
     uint8_t busy;
@@ -144,10 +112,6 @@ int lcdCheckBusy(void)
     return (busy != 0);   /* BUG FIX: function was missing a return */
 }
 
-/**
- * @brief  Send an 8-bit command in two 4-bit nibbles (high nibble first).
- *         RS = 0 (instruction).
- */
 void lcdSendCmd(char cmd)
 {
     lcdCheckBusy();
@@ -157,10 +121,6 @@ void lcdSendCmd(char cmd)
     lcdSendNibble( cmd       & 0x0F);   /* Low  nibble */
 }
 
-/**
- * @brief  Send an 8-bit data byte (character) in two 4-bit nibbles.
- *         RS = 1 (data).
- */
 void lcdSendChar(char data)
 {
     lcdCheckBusy();
@@ -170,30 +130,18 @@ void lcdSendChar(char data)
     lcdSendNibble( data       & 0x0F);  /* Low  nibble */
 }
 
-/**
- * @brief  Move cursor to (row, col).
- *         row: 0 = first line, 1 = second line.
- *         col: 0–15.
- */
 void lcdSetCursor(uint8_t row, uint8_t col)
 {
     uint8_t addr = (row == 0) ? (0x00 + col) : (0x40 + col);
     lcdSendCmd(0x80 | addr);
 }
 
-/**
- * @brief  Print a null-terminated string at the current cursor position.
- */
 void lcdPrint(const char *str)
 {
     while (*str)
         lcdSendChar(*str++);
 }
 
-/**
- * @brief  HD44780 4-bit initialisation sequence (from datasheet Figure 24).
- *         Must be called AFTER MX_GPIO_Init().
- */
 void lcdInit(void)
 {
     RESET(LCD_EN);
@@ -204,20 +152,16 @@ void lcdInit(void)
 
     /* ── Step 1: send 0x03 three times to guarantee 8-bit reset ── */
     setLcdDataPort(0x03);
-    lcdPulseEnable();
     LL_mDelay(5);               /* > 4.1 ms */
 
     setLcdDataPort(0x03);
-    lcdPulseEnable();
     Delay_uS(150);              /* > 100 µs */
 
     setLcdDataPort(0x03);
-    lcdPulseEnable();
     Delay_uS(150);
 
     /* ── Step 2: switch to 4-bit interface ── */
     setLcdDataPort(0x02);
-    lcdPulseEnable();
     Delay_uS(150);
 
     /* ── Step 3: configure with full 8-bit commands (two nibbles each) ── */
@@ -228,30 +172,50 @@ void lcdInit(void)
     lcdSendCmd(0x06);           /* Entry mode: increment address, no display shift */
     lcdSendCmd(0x0C);           /* Display ON, cursor OFF, blink OFF */
 }
-
 /* USER CODE END 0 */
 
-/**
-  * @brief  The application entry point.
-  * @retval int
-  */
 int main(void)
 {
+	/* USER CODE BEGIN 1 */
+
 	uint8_t i = 0;
 	char buff[16];
 
+	/* USER CODE END 1 */
+
+	/* MCU Configuration--------------------------------------------------------*/
+
+	/* Reset of all peripherals, Initializes the Flash interface and the Systick. */
 	HAL_Init();
+
+	/* USER CODE BEGIN Init */
+	lcdInit();
+	/* USER CODE END Init */
+
+	/* Configure the system clock */
     SystemClock_Config();
     LL_Init1msTick(SystemCoreClock);
     LL_SetSystemCoreClock(SystemCoreClock);
+
+
+    /* Initialize all configured peripherals */
     MX_GPIO_Init();
 
-    lcdInit();
+    /* USER CODE BEGIN 2 */
 
+    lcdSendCmd(0x01);
     lcdPrint("Mostra Char");
     LL_mDelay(1000);
 
-    while (1){
+    /* USER CODE END 2 */
+
+    /* Infinite loop */
+    /* USER CODE BEGIN WHILE */
+    while (1)
+    {
+    	/* USER CODE END WHILE */
+        /* USER CODE BEGIN 3 */
+
     	sprintf(buff,"Char %4d -> ",i);
     	lcdSetCursor(0, 0);
     	lcdPrint(buff);
@@ -262,6 +226,7 @@ int main(void)
     	i+=1;
     	LL_mDelay(250);
     }
+    /* USER CODE END 3 */
 }
 
 void UserButton_Callback(void)
