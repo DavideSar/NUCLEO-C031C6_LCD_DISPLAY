@@ -37,7 +37,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
-bool pause = false;
+bool pause = true;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -200,8 +200,11 @@ int main(void)
     /* USER CODE BEGIN 2 */
 
     lcdInit();
-    lcdPrint("Mostra Char");
-    LL_mDelay(1000);
+	lcdSendCmd(0x01);
+    lcdSetCursor(0, 0);
+    lcdPrint("ITS EMBT03 LCD");
+    lcdSetCursor(1, 0);
+    lcdPrint("DAVIDE S.");
 
     /* USER CODE END 2 */
 
@@ -214,7 +217,6 @@ int main(void)
     	/* USER CODE END WHILE */
         /* USER CODE BEGIN 3 */
     	while(!pause){
-			lcdSendCmd(0x01);
 			sprintf(buff,"Char %4d -> ",i);
 			lcdSetCursor(0, 0);
 			lcdPrint(buff);
@@ -223,7 +225,7 @@ int main(void)
 			lcdSetCursor(1, 0);
 			lcdPrint(buff);
 			i+=1;
-			LL_mDelay(250);
+			LL_mDelay(500);
     	}
 
 
