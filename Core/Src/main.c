@@ -36,6 +36,9 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+
+UART_HandleTypeDef huart2;
+
 /* USER CODE BEGIN PV */
 bool pause = true;
 /* USER CODE END PV */
@@ -43,6 +46,7 @@ bool pause = true;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN PFP */
 void Delay_uS(int uSTim);
 void setLcdDataPort(uint8_t nibble);
@@ -175,29 +179,35 @@ void lcdInit(void)
 }
 /* USER CODE END 0 */
 
+/**
+  * @brief  The application entry point.
+  * @retval int
+  */
 int main(void)
 {
-	/* USER CODE BEGIN 1 */
-	/* USER CODE END 1 */
 
-	/* MCU Configuration--------------------------------------------------------*/
+  /* USER CODE BEGIN 1 */
+  /* USER CODE END 1 */
 
-	/* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-	HAL_Init();
+  /* MCU Configuration--------------------------------------------------------*/
 
-	/* USER CODE BEGIN Init */
-	/* USER CODE END Init */
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+  HAL_Init();
 
-	/* Configure the system clock */
-    SystemClock_Config();
-    LL_Init1msTick(SystemCoreClock);
-    LL_SetSystemCoreClock(SystemCoreClock);
+  /* USER CODE BEGIN Init */
+  /* USER CODE END Init */
 
+  /* Configure the system clock */
+  SystemClock_Config();
 
-    /* Initialize all configured peripherals */
-    MX_GPIO_Init();
+  /* USER CODE BEGIN SysInit */
 
-    /* USER CODE BEGIN 2 */
+  /* USER CODE END SysInit */
+
+  /* Initialize all configured peripherals */
+  MX_GPIO_Init();
+  MX_USART2_UART_Init();
+  /* USER CODE BEGIN 2 */
 
     lcdInit();
 	lcdSendCmd(0x01);
@@ -206,37 +216,35 @@ int main(void)
     lcdSetCursor(1, 0);
     lcdPrint("DAVIDE S.");
 
-    /* USER CODE END 2 */
+  /* USER CODE END 2 */
 
-    /* Infinite loop */
-    /* USER CODE BEGIN WHILE */
+  /* Infinite loop */
+  /* USER CODE BEGIN WHILE */
 	uint8_t i = 0;
-	char buff[16];
+	char lcd_buff[16];
+	char term_buff[18];
     while (1)
     {
-    	/* USER CODE END WHILE */
-        /* USER CODE BEGIN 3 */
+    /* USER CODE END WHILE */
+
+    /* USER CODE BEGIN 3 */
     	while(!pause){
-			sprintf(buff,"Char %4d -> ",i);
+			sprintf(term_buff,"\r\nChar %4d -> ",i);
+			HAL_UART_Transmit(&huart2, (uint8_t*)term_buff, sizeof(term_buff), 1000);
+			sprintf(lcd_buff,"Char %4d -> ",i);
 			lcdSetCursor(0, 0);
-			lcdPrint(buff);
+			lcdPrint(lcd_buff);
 			lcdSendChar(i);
-			sprintf(buff,"Char 0x%02X -> %c",i,i);
+			sprintf(term_buff,"\r\nChar 0x%02X -> %c",i,i);
+			HAL_UART_Transmit(&huart2, (uint8_t*)term_buff, sizeof(term_buff), 1000);
+			sprintf(lcd_buff,"Char 0x%02X -> %c",i,i);
 			lcdSetCursor(1, 0);
-			lcdPrint(buff);
+			lcdPrint(lcd_buff);
 			i+=1;
 			LL_mDelay(500);
     	}
-
-
     }
-    /* USER CODE END 3 */
-}
-
-void UserButton_Callback(void)
-{
-  TOGGLE(INTERNAL_LED);
-  pause = !pause;
+  /* USER CODE END 3 */
 }
 
 /**
@@ -273,6 +281,42 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief USART2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART2_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART2_Init 0 */
+
+  /* USER CODE END USART2_Init 0 */
+
+  /* USER CODE BEGIN USART2_Init 1 */
+
+  /* USER CODE END USART2_Init 1 */
+  huart2.Instance = USART2;
+  huart2.Init.BaudRate = 115200;
+  huart2.Init.WordLength = UART_WORDLENGTH_8B;
+  huart2.Init.StopBits = UART_STOPBITS_1;
+  huart2.Init.Parity = UART_PARITY_NONE;
+  huart2.Init.Mode = UART_MODE_TX_RX;
+  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+  huart2.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+  huart2.Init.ClockPrescaler = UART_PRESCALER_DIV1;
+  huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  if (HAL_UART_Init(&huart2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART2_Init 2 */
+
+  /* USER CODE END USART2_Init 2 */
+
 }
 
 /**
@@ -333,24 +377,6 @@ static void MX_GPIO_Init(void)
 
   /**/
   LL_EXTI_SetEXTISource(LL_EXTI_CONFIG_PORTC, LL_EXTI_CONFIG_LINE13);
-
-  /**/
-  GPIO_InitStruct.Pin = VCP_USART2_TX_Pin;
-  GPIO_InitStruct.Mode = LL_GPIO_MODE_ALTERNATE;
-  GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_LOW;
-  GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
-  GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
-  GPIO_InitStruct.Alternate = LL_GPIO_AF_1;
-  LL_GPIO_Init(VCP_USART2_TX_GPIO_Port, &GPIO_InitStruct);
-
-  /**/
-  GPIO_InitStruct.Pin = VCP_USART2_RX_Pin;
-  GPIO_InitStruct.Mode = LL_GPIO_MODE_ALTERNATE;
-  GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_LOW;
-  GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
-  GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
-  GPIO_InitStruct.Alternate = LL_GPIO_AF_1;
-  LL_GPIO_Init(VCP_USART2_RX_GPIO_Port, &GPIO_InitStruct);
 
   /**/
   GPIO_InitStruct.Pin = INTERNAL_LED_Pin;
@@ -426,6 +452,12 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+void UserButton_Callback(void)
+{
+  TOGGLE(INTERNAL_LED);
+  pause = !pause;
+}
 
 /* USER CODE END 4 */
 
