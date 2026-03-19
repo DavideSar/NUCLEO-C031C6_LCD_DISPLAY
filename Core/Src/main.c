@@ -552,19 +552,15 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void EXTI4_15_IRQHandler(void)
+void UserButton_Callback(void)
 {
-    if (LL_EXTI_IsActiveRisingFlag_0_31(LL_EXTI_LINE_13) != RESET)
-    {
-        LL_EXTI_ClearRisingFlag_0_31(LL_EXTI_LINE_13);
-        static uint32_t ultimo = 0;
-        uint32_t adesso = HAL_GetTick();
-        if ((adesso - ultimo) > 200) {
-            lcd_running = !lcd_running;
-            LL_GPIO_TogglePin(INTERNAL_LED_GPIO_Port, INTERNAL_LED_Pin);
-            ultimo = adesso;
-        }
-    }
+	static uint32_t ultimo = 0;
+	uint32_t adesso = HAL_GetTick();
+	if ((adesso - ultimo) > 200) {
+		lcd_running = !lcd_running;
+		LL_GPIO_TogglePin(INTERNAL_LED_GPIO_Port, INTERNAL_LED_Pin);
+		ultimo = adesso;
+	}
 }
 /* USER CODE END 4 */
 
